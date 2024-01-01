@@ -35,7 +35,7 @@ from app.controllers.transactions import (
 )
 
 
-router = APIRouter(prefix='/api/users')
+router = APIRouter(prefix='/api/users', tags=['Users'])
 
 
 @router.post("/register", response_model=Response)

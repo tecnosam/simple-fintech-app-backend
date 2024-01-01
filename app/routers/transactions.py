@@ -26,7 +26,7 @@ from app.controllers.transactions import (
 )
 
 
-router = APIRouter(prefix='/api')
+router = APIRouter(prefix='/api', tags=['Transactions'])
 
 
 @router.get("/transactions", response_model=TransactionListResponse)
