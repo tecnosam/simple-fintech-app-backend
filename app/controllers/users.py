@@ -86,7 +86,7 @@ def update_profile(user_id, updates):
         with Session() as session:
 
             update_count = session.query(User).filter_by(
-                user_id=user_id
+                id=user_id
             ).update(updates)
 
             session.commit()
