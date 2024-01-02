@@ -2,6 +2,8 @@ from typing import List
 
 from sqlalchemy.exc import IntegrityError
 
+from sqlalchemy import or_
+
 from app.models.orm import (
     Session,
 
@@ -30,13 +32,18 @@ def get_transactions(
 
     with Session() as session:
 
-        wallet = session.query(WalletTransaction).filter_by(
-            user_id=user_id
+        wallet = session.query(WalletTransaction).filter(
+            or_(
+                WalletTransaction.user_id == user_id,
+                WalletTransaction.receiver_id == user_id
+            )
         ).all()
 
         paystack = session.query(PaystackTransaction).filter_by(
             user_id=user_id
         ).all()
+
+        print("Paystack", paystack)
 
         bank = session.query(BankTransaction).filter_by(
             user_id=user_id
@@ -44,12 +51,13 @@ def get_transactions(
 
         transactions = sorted(
             wallet + paystack + bank,
-            key=lambda x: x.created_at
+            key=lambda x: x.created_at,
+            reverse=True
         )
 
-        return transactions[offset:offset+limit:-1]
-
-    return []
+        print(offset, limit)
+        print("All", transactions, transactions[offset:offset+limit])
+        return transactions[offset:offset+limit] 
 
 
 def get_transaction(
@@ -182,7 +190,7 @@ def register_deposit_via_paystack(**deposit_data):
 
     """
 
-    # TODO: talk to paystack first
+    deposit_data['transaction_type'] = 'CREDIT'
 
     with Session() as session:
         try:
@@ -191,8 +199,9 @@ def register_deposit_via_paystack(**deposit_data):
             session.add(transaction)
             session.commit()
 
-            return True
-        except IntegrityError:
+            return {'id': transaction.id, 'amount': transaction.amount}
+
+        except IntegrityError as exc:
 
             session.rollback()
             print("This transaction has already been recorded before")
@@ -222,14 +231,16 @@ def register_withdrawal_via_bank(
 
         # TODO: Talk to paystack
 
+        bank_transaction['user_id'] = user_id
         bank_transaction['transaction_reference'] = ""
+        bank_transaction['transaction_type'] = 'DEBIT'
 
         transaction = BankTransaction(**bank_transaction)
 
         session.add(transaction)
         session.commit()
 
-        return True
+        return {'id': transaction.id, 'amount': transaction.amount}
 
 
 def register_transfer(sender_id, receiver_id, amount):
@@ -244,7 +255,7 @@ def register_transfer(sender_id, receiver_id, amount):
 
     with Session() as session:
 
-        if get_balance(user_id, session=session) < amount:
+        if get_balance(sender_id, session=session) < amount:
 
             raise ValueError("Insufficient funds to make this transaction")
 
@@ -282,19 +293,28 @@ def update_transaction_status_from_webhook(webhook_data):
 
     """
 
-    user_id = webhook_data['metadata'].get('user_id')
-    email = webhook_data['metadata'].get('email')
+    event, _ = webhook_data['event'].split(".")
 
-    transaction_reference = webhook_data.get('reference')
-    transaction_status = webhook_data['status'] == 'success'
+    data = webhook_data['data']
+
+    transaction_reference = data.get('reference')
+    transaction_status = data['status'].upper()
 
     # Either withdrawal or deposit
-    transaction_type = webhook_data['metdata'].get('type')
 
-    if transaction_type == 'DEPOSIT':
+    if event == 'charge':
         Model = PaystackTransaction
-    else:
+        metadata = data.get('metadata', {}) 
+
+    elif event == 'transfer':
         Model = BankTransaction
+        metadata = data['recipient'].get('metadata', {}) 
+    else:
+        # Don't care about other responses
+        return 0
+
+    user_id = metadata.get('user_id')
+    email = metadata.get('email')
 
     with Session() as session:
 
@@ -306,8 +326,9 @@ def update_transaction_status_from_webhook(webhook_data):
         session.commit()
 
         if modified_count:
+            print(f"Sending email to {email}")
             # TODO: Trigger email to client saying transaction is successful
             pass
 
-    return {}
+    return modified_count
 

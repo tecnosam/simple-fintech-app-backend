@@ -7,7 +7,8 @@ from app.dependencies import (
 from app.models.forms import (
     DepositForm,
     WithdrawalForm,
-    TransferForm
+    TransferForm,
+    WebHookPayload
 )
 
 from app.models.responses import (
@@ -22,7 +23,9 @@ from app.controllers.transactions import (
 
     register_deposit_via_paystack,
     register_withdrawal_via_bank,
-    register_transfer
+    register_transfer,
+
+    update_transaction_status_from_webhook
 )
 
 
@@ -36,7 +39,7 @@ def get_transactions_route(
 
     # TODO: paginate
     transactions = get_transactions(user_id)
-    print(transactions)
+    print(transactions, user_id, type(user_id))
     return TransactionResponse.cook(data=transactions)
 
 
@@ -71,7 +74,7 @@ def deposit_route(
         **data
     )
 
-    return TransactionResponse.cook()
+    return TransactionResponse.cook(data=deposit)
 
 
 @router.post("/withdraw", response_model=Response)
@@ -106,7 +109,11 @@ def wallet_transfer_route(
 
 
 @router.post("/paystack/webhook")
-def paystack_webhook():
+def paystack_webhook(payload: WebHookPayload):
 
-    return {}
+    webhook_data = payload.model_dump()
+
+    return update_transaction_status_from_webhook(
+        webhook_data
+    )
 

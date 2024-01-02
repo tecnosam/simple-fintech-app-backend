@@ -19,10 +19,6 @@ class LoginForm(BaseModel):
 
 class UpdateProfileForm(BaseModel):
 
-    first_name: str = Field(default=None)
-    last_name: str = Field(default=None)
-
-    email: str = Field(default=None)
     phone_no: str = Field(default=None)
 
     username: str = Field(default=None)
@@ -33,8 +29,6 @@ class UpdateProfileForm(BaseModel):
 class DepositForm(BaseModel):
 
     transaction_reference: str
-
-    transaction_type: str = 'CREDIT'
 
     amount: float
 
@@ -47,8 +41,6 @@ class WithdrawalForm(BaseModel):
 
     bank_receiver_name: str
 
-    transaction_type: str = 'DEBIT'
-
     amount: float
 
 
@@ -56,7 +48,11 @@ class TransferForm(BaseModel):
 
     receiver_id: int
 
-    transaction_type: str = 'DEBIT'
-
     amount: float
+
+
+class WebHookPayload(BaseModel):
+
+    event: str
+    data: dict
 
