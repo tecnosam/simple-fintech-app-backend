@@ -20,6 +20,8 @@ class Transaction(OurBase):
 
     transaction_status: str
 
+    narration: str
+
 
 class User(OurBase):
 
@@ -37,28 +39,10 @@ class Bank(OurBase):
     bank_sort_code: str
 
 
-class WalletTransaction(Transaction):
-
-    receiver_id: int
-    receiver_name: str
-
-
-class BankTransaction(Transaction):
-
-    bank_name: str
-
-    bank_account_no: str
-    bank_receiver_name: str
-
-
 class DashboardData(BaseModel):
 
     user: User
     balance: float
 
-    recent_transactions: List[
-        WalletTransaction |
-        BankTransaction   |
-        Transaction
-    ]
+    recent_transactions: List[Transaction]
 
