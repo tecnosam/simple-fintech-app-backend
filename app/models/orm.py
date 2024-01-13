@@ -107,6 +107,10 @@ class BaseTransaction(OurBase):
         default='PENDING'
     )
 
+    @property
+    def narration(self):
+        return "Transaction Performed"
+
 
 class WalletTransaction(BaseTransaction):
 
@@ -117,6 +121,11 @@ class WalletTransaction(BaseTransaction):
         ForeignKey('users.id', ondelete='SET NULL'),
         nullable=True
     )
+
+    @property
+    def narration(self):
+
+        return f"Transfer to {self.receiver_id}"
 
 
 class BankTransaction(BaseTransaction):
@@ -140,22 +149,10 @@ class BankTransaction(BaseTransaction):
 
     transaction_reference = Column(Text, nullable=False, unique=True)
 
+    @property
+    def narration(self):
 
-class CardTransaction(BaseTransaction):
-
-    """
-        Transactions performed with ATM card directly.
-
-        This feature is BETA and not available in this MVP
-
-    """
-
-    __tablename__ = 'card_transactions'
-
-    card_id = Column(
-        Integer,
-        ForeignKey('cards.id', ondelete='SET NULL')
-    )
+        return f"Bank Transfer to {self.bank_receiver_name}"
 
 
 class PaystackTransaction(BaseTransaction):
@@ -175,6 +172,11 @@ class PaystackTransaction(BaseTransaction):
         nullable=False,
         unique=True
     )
+
+    @property
+    def narration(self):
+
+        return "Deposit to Wallet"
 
 
 Base.metadata.create_all(bind=engine)
