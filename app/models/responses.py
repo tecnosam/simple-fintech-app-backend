@@ -1,20 +1,20 @@
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.representations import (
     User,
     Bank,
     Transaction,
-    BankTransaction,
-    WalletTransaction,
     DashboardData
 )
 
 
 class Response(BaseModel):
 
-    success: bool
+    success: bool = Field(default=True)
+
+    status: bool | str | int
 
     message: str
 
@@ -24,10 +24,12 @@ class Response(BaseModel):
     def cook(
         success=True,
         message="Request Completed successfully",
-        data=None
+        data=None,
+        status=200
     ):
 
         return {
+            "status": status,
             "success": success,
             "message": message,
             "data": data
@@ -59,10 +61,9 @@ class DashboardResponse(Response):
 
 class TransactionResponse(Response):
 
-    data: Transaction | BankTransaction | WalletTransaction
+    data: Transaction
 
 
 class TransactionListResponse(Response):
 
-    data: List[Transaction | BankTransaction | WalletTransaction]
-
+    data: List[Transaction]
