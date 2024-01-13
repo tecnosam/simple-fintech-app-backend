@@ -8,6 +8,12 @@ from app.utils.security import (
     jwt_encode
 )
 
+from app.utils.exceptions import (
+    AuthenticationException,
+    EntityExistsException,
+    EntityNotFoundException
+)
+
 
 def create_user(user_data: dict):
 
@@ -31,7 +37,9 @@ def create_user(user_data: dict):
 
     except IntegrityError as e:
 
-        raise ValueError("User with E-mail already exists") from e
+        raise EntityExistsException(
+            "User with E-mail already exists"
+        ) from e
 
 
 def probe_username(username: str):
@@ -49,24 +57,25 @@ def probe_username(username: str):
         user = session.query(User).filter_by(username=username).first()
 
         if user is None:
-            return -1
+            return -1, 'Unknown'
 
-        return user.id
+        return user.id, user.name
 
 
 def authenticate_user(email: str, password: str):
 
     with Session() as session:
 
+        print(email, [user.email for user in session.query(User).all()])
         user = session.query(User).filter_by(email=email).first()
 
         if user is None:
 
-            raise ValueError("User with E-mail does not exist")
+            raise EntityNotFoundException("User with E-mail does not exist")
 
         if not check_password(user.password, password):
 
-            raise ValueError("Incorrect Password")
+            raise AuthenticationException("Incorrect Password")
 
         return jwt_encode({
             'id': user.id,
@@ -93,11 +102,11 @@ def update_profile(user_id, updates):
 
             if not update_count:
 
-                raise ValueError("User with ID doesn't exist")
+                raise EntityNotFoundException("User with ID doesn't exist")
 
             return True
 
     except IntegrityError:
 
-        raise ValueError("User with E-mail already exists")
+        raise EntityExistsException("User with username already exists")
 
