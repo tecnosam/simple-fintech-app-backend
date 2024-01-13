@@ -14,7 +14,15 @@ from app.models.orm import (
     PaystackTransaction
 )
 
-from app.utils.exceptions import AppException
+from app.utils.exceptions import (
+    AppException,
+    EntityExistsException,
+    EntityNotFoundException
+)
+
+from app.utils.paystack import (
+    initiate_transaction
+)
 
 
 # ========== GET INFORMATION ==========
@@ -194,12 +202,36 @@ def register_deposit_via_paystack(**deposit_data):
 
     with Session() as session:
         try:
+
+            # Get user for their email
+            user = session.query(User).get(deposit_data['user_id'])
+            if not user:
+                raise EntityNotFoundException("User does not exist!")
+
+            paystack_data = initiate_transaction(
+                user.email,
+                deposit_data['amount']
+            )
+
+            if paystack_data is None:
+
+                raise AppException(
+                    "This service is currently unavailable!",
+                    503
+                )
+
+            deposit_data['transaction_reference'] = paystack_data['reference']
+
             transaction = PaystackTransaction(**deposit_data)
 
             session.add(transaction)
             session.commit()
 
-            return {'id': transaction.id, 'amount': transaction.amount}
+            return {
+                'id': transaction.id,
+                'amount': transaction.amount,
+                **paystack_data
+            }
 
         except IntegrityError as exc:
 
@@ -227,7 +259,10 @@ def register_withdrawal_via_bank(
     with Session() as session:
 
         if get_balance(user_id, session=session) < amount:
-            raise ValueError("Insufficient funds to make this transaction")
+            raise AppException(
+                "Insufficient funds to make this transaction",
+                400
+            )
 
         # TODO: Talk to paystack
 
@@ -257,7 +292,10 @@ def register_transfer(sender_id, receiver_id, amount):
 
         if get_balance(sender_id, session=session) < amount:
 
-            raise ValueError("Insufficient funds to make this transaction")
+            raise AppException(
+                "Insufficient funds to make this transaction",
+                400
+            )
 
         data = {
             'user_id': sender_id,
@@ -300,6 +338,10 @@ def update_transaction_status_from_webhook(webhook_data):
     transaction_reference = data.get('reference')
     transaction_status = data['status'].upper()
 
+    if transaction_status != 'SUCCESS':
+
+        transaction_status = 'FAILED'
+
     # Either withdrawal or deposit
 
     if event == 'charge':
@@ -308,18 +350,16 @@ def update_transaction_status_from_webhook(webhook_data):
 
     elif event == 'transfer':
         Model = BankTransaction
-        metadata = data['recipient'].get('metadata', {}) 
+        email = data['recipient'].get('email')
     else:
         # Don't care about other responses
         return 0
 
-    user_id = metadata.get('user_id')
     email = metadata.get('email')
 
     with Session() as session:
 
         modified_count = session.query(Model).filter_by(
-            user_id=user_id,
             transaction_reference=transaction_reference
         ).update({'transaction_status': transaction_status})
 
