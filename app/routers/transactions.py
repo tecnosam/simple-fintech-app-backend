@@ -28,8 +28,34 @@ from app.controllers.transactions import (
     update_transaction_status_from_webhook
 )
 
+from app.utils.paystack import (
+    get_bank_list,
+    verify_bank_account
+)
+
 
 router = APIRouter(prefix='/api', tags=['Transactions'])
+
+
+@router.get("/banks", response_model=Response)
+def get_bank_list_route():
+
+    return get_bank_list()
+
+
+@router.get(
+    "/banks/{bank_code}/verify/{account_number}",
+    response_model=Response
+)
+def verify_account_number_route(
+    bank_code: str = Path(),
+    account_number: str = Path()
+):
+
+    return verify_bank_account(
+        bank_code,
+        account_number
+    )
 
 
 @router.get("/transactions", response_model=TransactionListResponse)
