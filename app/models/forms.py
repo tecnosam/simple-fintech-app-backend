@@ -28,8 +28,6 @@ class UpdateProfileForm(BaseModel):
 
 class DepositForm(BaseModel):
 
-    transaction_reference: str
-
     amount: float
 
 
