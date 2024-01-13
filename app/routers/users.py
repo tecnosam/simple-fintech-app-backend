@@ -85,7 +85,8 @@ def get_dashboard_route(user_id: int = Depends(get_user_id)):
 @router.get("/{username}", response_model=Response)
 def probe_username_route(username: str = Path):
 
+    user_id, name = probe_username(username)
     return Response.cook(
-        data={'user_id': probe_username(username)}
+        data={'user_id': user_id, 'name': name}
     )
 
