@@ -29,16 +29,13 @@ def initiate_transaction(email, amount):
 
     url = f"{BASE_URL}/transaction/initialize"
 
-    print(email, amount)
-
     response = post(
         url,
         headers=AUTH_HEADERS,
         json={
             'email': email,
-            'amount': amount
+            'amount': amount * 100
         },
-        timeout=1
     )
 
     if response.ok:
