@@ -116,10 +116,22 @@ class WalletTransaction(BaseTransaction):
 
     __tablename__ = 'transactions'
 
+    namespace = "WALLET"
+
     receiver_id = Column(
         Integer,
         ForeignKey('users.id', ondelete='SET NULL'),
         nullable=True
+    )
+
+    sender_name = Column(
+        Text,
+        nullable=False,
+    )
+
+    receiver_name = Column(
+        Text,
+        nullable=False
     )
 
     @property
@@ -137,6 +149,8 @@ class BankTransaction(BaseTransaction):
     """
 
     __tablename__ = 'bank_transactions'
+
+    namespace = "WITHDRAW"
 
     bank_id = Column(
         Integer,
@@ -166,13 +180,14 @@ class PaystackTransaction(BaseTransaction):
 
     __tablename__ = "paystack_transactions"
 
+    namespace = 'DEPOSIT'
+
     # Transaction reference from Paystack
     transaction_reference = Column(
         Text,
         nullable=False,
         unique=True
     )
-
     @property
     def narration(self):
 
