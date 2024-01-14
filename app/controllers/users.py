@@ -66,7 +66,6 @@ def authenticate_user(email: str, password: str):
 
     with Session() as session:
 
-        print(email, [user.email for user in session.query(User).all()])
         user = session.query(User).filter_by(email=email).first()
 
         if user is None:
