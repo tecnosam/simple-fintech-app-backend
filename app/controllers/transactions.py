@@ -51,8 +51,6 @@ def get_transactions(
             user_id=user_id
         ).all()
 
-        print("Paystack", paystack)
-
         bank = session.query(BankTransaction).filter_by(
             user_id=user_id
         ).all()
@@ -63,8 +61,9 @@ def get_transactions(
             reverse=True
         )
 
-        print(offset, limit)
-        print("All", transactions, transactions[offset:offset+limit])
+        if limit is None:
+            return transactions
+
         return transactions[offset:offset+limit] 
 
 
@@ -297,9 +296,14 @@ def register_transfer(sender_id, receiver_id, amount):
                 400
             )
 
+        sender = session.query(User).get(sender_id)
+        receiver = session.query(User).get(receiver_id)
+
         data = {
             'user_id': sender_id,
             'receiver_id': receiver_id,
+            'sender_name': sender.name,
+            'receiver_name': receiver.name,
             'transaction_type': 'DEBIT',
             'amount': amount,
             'transaction_status': 'SUCCESS'
@@ -344,18 +348,15 @@ def update_transaction_status_from_webhook(webhook_data):
 
     # Either withdrawal or deposit
 
+    email = ""
+
     if event == 'charge':
         Model = PaystackTransaction
-        metadata = data.get('metadata', {}) 
-
     elif event == 'transfer':
         Model = BankTransaction
-        email = data['recipient'].get('email')
     else:
         # Don't care about other responses
         return 0
-
-    email = metadata.get('email')
 
     with Session() as session:
 
