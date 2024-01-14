@@ -64,7 +64,7 @@ def get_transactions_route(
 ):
 
     # TODO: paginate
-    transactions = get_transactions(user_id)
+    transactions = get_transactions(user_id, limit=None)
     print(transactions, user_id, type(user_id))
     return TransactionResponse.cook(data=transactions)
 
