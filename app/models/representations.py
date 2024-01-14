@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class OurBase(BaseModel):
@@ -19,6 +19,9 @@ class Transaction(OurBase):
     amount: float
 
     transaction_status: str
+
+    sender_name: str = Field(default=None)
+    receiver_name: str = Field(default=None)
 
     narration: str
 
