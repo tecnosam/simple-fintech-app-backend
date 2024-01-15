@@ -137,7 +137,7 @@ class WalletTransaction(BaseTransaction):
     @property
     def narration(self):
 
-        return f"Transfer to {self.receiver_id}"
+        return f"Transfer to {self.receiver_name}"
 
 
 class BankTransaction(BaseTransaction):
